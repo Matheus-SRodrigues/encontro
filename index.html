@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>O nosso reencontro</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-1:#d52b1e;
+      --bg-2:#009739;
+      --accent:#ffcc00;
+      --panel:rgba(255,255,255,0.96);
+      --muted:#6b7280;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:"Poppins",sans-serif;
+      background: linear-gradient(90deg,var(--bg-1) 50%, var(--bg-2) 75%, var(--accent) 100%);
+      color:#0f172a;
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+    }
+
+    .wrap {
+      max-width:1200px;
+      margin:24px auto;
+      padding:20px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:20px;
+      flex:1;
+    }
+    @media(max-width:980px){ .wrap{grid-template-columns:1fr} }
+
+    header{
+      grid-column:1/-1;
+      text-align:center;
+      margin-bottom:6px;
+    }
+    #main-title{
+      font-family:'Pacifico',cursive;
+      font-size:36px;
+      color:#fff;
+      text-shadow:0 6px 24px rgba(0,0,0,0.35);
+      margin:6px 0;
+    }
+
+    .panel{background:var(--panel);border-radius:14px;padding:18px;box-shadow:0 8px 30px rgba(3,7,18,0.18);}
+
+    #photo-container{
+      height:62vh;
+      width:100%;
+      border-radius:12px;
+      overflow:hidden;
+      position:relative;
+      background:url("foto.png") center/cover no-repeat;
+      border:1px solid rgba(0,0,0,0.06);
+    }
+
+    .sidebar{display:flex;flex-direction:column;gap:14px}
+    .times{background:#fff;border-radius:12px;padding:14px;text-align:center}
+    .times h2{margin:0 0 8px;font-size:1.05rem;}
+
+    .time-entry{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px;}
+    .time-entry img{width:28px;height:18px;border-radius:2px}
+    .time-entry div{display:flex;flex-direction:column;align-items:center;}
+
+    #time-br{color:var(--bg-2)}
+    #time-cn{color:var(--bg-1)}
+
+    .count-controls{margin-top:10px;display:flex;gap:8px;justify-content:center}
+    .contador-input-small{padding:8px;border-radius:8px;border:1px solid #ccc}
+    .btn{background:linear-gradient(90deg,var(--bg-2),#ffd24a);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer}
+
+    /* === Globo dentro da sidebar, logo abaixo dos horários === */
+    #globe-container{
+      width: 100%;
+      height: 260px;       /* ajuste a altura aqui se quiser maior/menor */
+      margin-top: 14px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: transparent;
+      position: relative;  /* importante: marcadores posicionados relativamente a este box */
+    }
+
+    /* Marcadores (emoji + label) */
+    .marker{
+      position:absolute;
+      font-size:26px;
+      line-height:1;
+      pointer-events:none;
+      text-align:center;
+      color:#fff;
+      text-shadow:1px 1px 6px rgba(0,0,0,0.7);
+      transform:translate(-50%,-50%);
+      z-index: 20; /* acima do canvas */
+      white-space:nowrap;
+      opacity:0.0; /* apareço depois que posicionar corretamente */
+      transition:opacity .25s;
+    }
+    .marker small{
+      display:block;
+      margin-top:4px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:0.4px;
+      text-transform:uppercase;
+    }
+
+    /* Spotify */
+    #btn-spotify-play{background:#1DB954;color:#fff;border:none;border-radius:30px;padding:12px 18px;font-weight:700;cursor:pointer}
+    #spotify-player{display:none;width:100%;height:82px;border-radius:12px;margin-top:10px}
+
+    /* Rodapé */
+    footer{
+      text-align:center;
+      padding:12px;
+      font-size:0.9rem;
+      background:rgba(0,0,0,0.25);
+      color:#000000;
+    }
+
+    /* Garante que o canvas ocupe todo o container */
+    #globe-container canvas{display:block; width:100%; height:100%;}
+  </style>
+</head>
+<body>
+  <header>
+    <div id="main-title">O nosso reencontro</div>
+  </header>
+
+  <main class="wrap">
+    <section class="panel">
+      <div id="photo-container" aria-hidden="true"></div>
+
+      <div style="text-align:center; margin-top:10px; font-size:1.2rem; font-weight:600; color:#f30707">
+        Faltam <span id="days-left">--</span> dias para a gente se ver 💏
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="times panel">
+        <h2>Horários</h2>
+        <div class="time-entry">
+          <img src="https://upload.wikimedia.org/wikipedia/en/0/05/Flag_of_Brazil.svg" alt="Bandeira do Brasil">
+          <div><div id="time-br">--:--:--</div><small>Brasil (São Paulo)</small></div>
+        </div>
+        <div class="time-entry">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg" alt="Bandeira da China">
+          <div><div id="time-cn">--:--:--</div><small>China (Shanghai)</small></div>
+        </div>
+        <div class="count-controls">
+          <input id="input-volta" type="datetime-local" class="contador-input-small">
+          <button id="btn-save" class="btn">Salvar</button>
+        </div>
+      </div>
+
+      <!-- Globo inserido aqui, abaixo dos horários -->
+      <div id="globe-container" aria-hidden="true"></div>
+
+      <div>
+        <button id="btn-spotify-play">Tocar Música 🎵</button>
+        <iframe id="spotify-player"
+          src="https://open.spotify.com/embed/playlist/5dG0kBsHw9410iLF8liro4?utm_source=generator"
+          frameborder="0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture">
+        </iframe>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    © desenvolvido por Matheus Rodrigues
+  </footer>
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+  <script>
+    // --- Globo 3D com marcadores CHINA (NORTE) e BRASIL (SUL) ---
+    const container = document.getElementById('globe-container');
+
+    // cena e câmera
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.z = 4; // afastei um pouco pra caber bem na sidebar
+
+    // renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setClearColor(0x000000, 0);
+    container.appendChild(renderer.domElement);
+
+    // luz
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    const light = new THREE.DirectionalLight(0xffffff, 0.6);
+    light.position.set(5, 3, 5);
+    scene.add(light);
+
+    // textura
+    const textureLoader = new THREE.TextureLoader();
+    const earthTexture = textureLoader.load('https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg');
+
+    // esfera: aumente o primeiro parâmetro se quiser um globo "mais cheio"
+    const globe = new THREE.Mesh(
+      new THREE.SphereGeometry(1.25, 64, 64),
+      new THREE.MeshPhongMaterial({ map: earthTexture })
+    );
+    scene.add(globe);
+
+    // função para criar marcador; label vai aparecer em small abaixo do emoji
+    function createFloatingMarker(emoji, label, lat, lon) {
+      const div = document.createElement('div');
+      div.className = 'marker';
+      div.innerHTML = `${emoji}<small>${label}</small>`;
+      // evitar flash no topo-esquerdo antes do primeiro posicionamento
+      div.style.left = '50%';
+      div.style.top = '50%';
+      container.appendChild(div);
+      div.lat = lat;
+      div.lon = lon;
+      div.offsetX = 6 + Math.random() * 12;
+      div.offsetY = 6 + Math.random() * 12;
+      div.speed = 0.001 + Math.random() * 0.003;
+      return div;
+    }
+
+    // MARCADORES DISTANTES: China (NORTE/LESTE) e Brasil (SUL/OESTE)
+    const markerChina = createFloatingMarker('👨🏻‍🎓', 'Zé Humberto ', 35, 105);   // lat 35N, lon 105E
+    const markerBrasil = createFloatingMarker('👨🏻🐶', 'Victor', -15, -55); // lat 15S, lon 55W
+
+    // função para posicionar marcadores (projeção simples)
+    function updateMarkers() {
+      const cx = container.clientWidth / 2;
+      const cy = container.clientHeight / 2;
+      const radius = Math.min(cx, cy) * 0.72; // espaço interno para os marcadores
+
+      [markerChina, markerBrasil].forEach(m => {
+        const phi = (90 - m.lat) * (Math.PI / 180);
+        const theta = (m.lon + 180) * (Math.PI / 180);
+        const nx = Math.sin(phi) * Math.cos(theta);
+        const ny = Math.cos(phi);
+
+        const floatX = Math.sin(Date.now() * m.speed) * m.offsetX;
+        const floatY = Math.cos(Date.now() * m.speed) * m.offsetY;
+
+        const x = cx + radius * nx + floatX;
+        // IMPORTANTE: Y invertido para que lat positive fique acima do centro
+        const y = cy - radius * ny + floatY;
+
+        m.style.left = `${x}px`;
+        m.style.top = `${y}px`;
+        m.style.opacity = '1';
+      });
+    }
+
+    // animação
+    function animate() {
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.0013;
+      globe.rotation.x = 0.04 * Math.sin(Date.now() * 0.0009);
+      renderer.render(scene, camera);
+      updateMarkers();
+    }
+    animate();
+
+    // resize handler
+    function resizeGlobe() {
+      renderer.setPixelRatio(window.devicePixelRatio || 1);
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      updateMarkers();
+    }
+
+    // chama resize no load e no resize da janela
+    window.addEventListener('load', () => {
+      resizeGlobe();
+      updateMarkers();
+    });
+    window.addEventListener('resize', () => {
+      // esperto curto pra evitar leituras erradas durante reflows
+      setTimeout(resizeGlobe, 60);
+    });
+
+    // -------------------------
+    // Relógios: usa timeZone explícito (São Paulo e Shanghai)
+    // -------------------------
+    const timeBR = document.getElementById('time-br');
+    const timeCN = document.getElementById('time-cn');
+
+    function updateTime() {
+      const now = new Date();
+      // hora de São Paulo (America/Sao_Paulo)
+      if (timeBR) {
+        timeBR.textContent = now.toLocaleTimeString('pt-BR', {
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          timeZone: 'America/Sao_Paulo'
+        });
+      }
+      // hora de Shanghai (China)
+      if (timeCN) {
+        timeCN.textContent = now.toLocaleTimeString('zh-CN', {
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          timeZone: 'Asia/Shanghai'
+        });
+      }
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // --- Spotify toggle ---
+    const btnSpotify = document.getElementById('btn-spotify-play');
+    const spotify = document.getElementById('spotify-player');
+    btnSpotify.addEventListener('click', () => {
+      const show = spotify.style.display === 'block';
+      spotify.style.display = show ? 'none' : 'block';
+      btnSpotify.textContent = show ? 'Tocar Música 🎵' : 'Parar Música ✖️';
+    });
+
+    // --- Contador ---
+    const cdDays = document.getElementById('days-left');
+    const inputVolta = document.getElementById('input-volta');
+    const btnSave = document.getElementById('btn-save');
+    let targetDate = new Date(inputVolta.value || '2025-12-31T12:00');
+
+    function updateCountdown(){
+      const now = new Date();
+      const diff = targetDate - now;
+      const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+      cdDays.textContent = days;
+    }
+    setInterval(updateCountdown, 1000);
+
+    btnSave.addEventListener('click', () => {
+      if (inputVolta.value) {
+        targetDate = new Date(inputVolta.value);
+        updateCountdown();
+        alert('Data do reencontro atualizada!');
+      }
+    });
+
+  </script>
+</body>
+</html>
